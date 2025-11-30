@@ -28,12 +28,7 @@ jobs:
         ports:
           - "27017:27017"
         env:
-          MONGO_INITDB_DATABASE: climate_db   # creates DB
-        options: >-
-          --health-cmd="mongo --eval 'db.runCommand({ ping: 1 })'"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+          MONGO_INITDB_DATABASE: climate_db
 
     steps:
       - name: Checkout repository
@@ -58,22 +53,24 @@ jobs:
         with:
           python-version: '3.10'
 
-      # --- TEMPORARILY DISABLED ---
-      # These will be re-enabled after updating scripts for local MongoDB
-
-      # - name: Verify MongoDB connection
-      #   env:
-      #     MONGO_URI: ${{ secrets.MONGO_URI }}
-      #   run: |
-      #     pip install pymongo
-      #     python scripts/test_mongo_connection.py
+      - name: Wait for MongoDB
+        run: |
+          echo "Checking MongoDB readiness..."
+          for i in {1..15}; do
+            if nc -zv 127.0.0.1 27017; then
+              echo "MongoDB is ready!"
+              break
+            fi
+            echo "Waiting for MongoDB... ($i/15)"
+            sleep 4
+          done
 
       - name: Run ETL Data Load
         env:
           MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
         run: |
           pip install pymongo mysql-connector-python pandas requests
-          python scripts/etl.py mongodb://localhost:27017/
+          python scripts/etl.py mongodb://127.0.0.1:27017/
 
       - name: Run concurrent database operations
         env:
@@ -82,10 +79,10 @@ jobs:
           pip install mysql-connector-python
           python scripts/concurrent_ops.py
 
+      # Will re-enable later
       # - name: Validate data consistency
       #   env:
-      #     MONGO_URI: ${{ secrets.MONGO_URI }}
       #     MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
       #   run: |
-      #     pip install pymongo mysql-connector-python
+      #     pip install mysql-connector-python pymongo
       #     python scripts/validate_consistency.py
