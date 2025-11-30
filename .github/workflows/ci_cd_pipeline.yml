@@ -79,10 +79,10 @@ jobs:
           pip install mysql-connector-python
           python scripts/concurrent_ops.py
 
-      # Will re-enable later
-      # - name: Validate data consistency
-      #   env:
-      #     MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-      #   run: |
-      #     pip install mysql-connector-python pymongo
-      #     python scripts/validate_consistency.py
+      - name: Validate data consistency
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        run: |
+          pip install pymongo mysql-connector-python
+          python scripts/validate_consistency.py mongodb://localhost:27017/
+
