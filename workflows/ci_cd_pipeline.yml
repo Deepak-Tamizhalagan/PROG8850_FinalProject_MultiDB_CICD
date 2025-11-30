@@ -64,3 +64,11 @@ jobs:
         run: |
           pip install mysql-connector-python
           python scripts/concurrent_ops.py
+
+      - name: Validate data consistency
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+        run: |
+          pip install pymongo mysql-connector-python
+          python scripts/validate_consistency.py
