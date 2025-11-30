@@ -27,6 +27,8 @@ jobs:
         image: mongo:6
         ports:
           - "27017:27017"
+        env:
+          MONGO_INITDB_DATABASE: climate_db   # creates DB
         options: >-
           --health-cmd="mongo --eval 'db.runCommand({ ping: 1 })'"
           --health-interval=10s
