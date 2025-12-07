@@ -96,9 +96,45 @@ Our goal was to ensure that all database operations can be observed, measured, v
 
 
 ## Task-3 Anomaly Detection & Performance Optimization (Altaf)**
-This project was centered around the development of a comprehensive anomaly detection workflow employing a variety of tools like Python, Pandas, Scikit-Learn, MongoDB, PostgreSQL, and SigNoz monitoring.  
+This project was centered around the development of a comprehensive anomaly detection workflow employing a variety of tools like Python, Pandas, Scikit-Learn, MongoDB, PostgreSQL, and SigNoz monitoring.
 The objective was to identify anomalies, keep them in the system, measure model effectiveness, and suggest improvements for SQL/queries according to SigNoz metrics.
+### Quickstart: what to add and where
+1. **Configure database + SigNoz endpoints** in `scripts/anomaly_detection.py`:
+   - Update `MONGO_URI` and `POSTGRES_CONFIG` to your credentials/hosts.
+   - Set `OTEL_EXPORTER_OTLP_ENDPOINT` if your SigNoz OTLP receiver is not at `http://localhost:4317`.
+   - Adjust thresholds with `TEMPERATURE_SPIKE_THRESHOLD` and `FARE_SPIKE_THRESHOLD` if your data ranges differ.
+2. **Install Python dependencies** (once per environment):
+   ```bash
+   pip install -r scripts/requirements.txt
+   ```
+   If you prefer a manual list, install: `pandas scikit-learn pymongo psycopg2-binary opentelemetry-sdk opentelemetry-exporter-otlp`.
 
+3. **Run the detector** from the repo root:
+   ```bash
+   python scripts/anomaly_detection.py
+   ```
+   - If you only want to see the printed dataframe/metrics without touching Mongo/Postgres, add `--skip-db`:
+   ```bash
+   python scripts/anomaly_detection.py --skip-db
+   ```
+   - If you want to run against your own dataframe, replace `load_data()` inside the script with your ingestion logic (ensure the dataframe has `temperature`, `fare`, and `humidity` columns).
+
+   This will:
+   - Load sample data (or your dataframe).
+   - Flag anomalies using rule checks + Isolation Forest.
+   - Bulk-insert anomalies into `transportdb.Anomalies` (MongoDB) and the Postgres `anomalies` table (skipped when `--skip-db` is used).
+   - Emit SigNoz metrics (`anomaly_detection_runs`, `anomaly_records_flagged`, `anomaly_detection_precision`, `anomaly_detection_recall`).
+
+4. **Review outputs**:
+   - Console shows the anomaly-marked dataframe plus precision/recall. A successful run prints something like:
+![alt text](image.png)
+   - MongoDB/PostgreSQL contain only flagged rows (table auto-created if missing).
+   - SigNoz displays the exported metrics for dashboards/alerts.
+
+### Troubleshooting tips
+- **No database available?** Use `--skip-db` to avoid Mongo/Postgres writes while still seeing the console output and SigNoz metrics.
+- **Different data schema?** Update the column names in `load_data()` and the rule checks (`temperature_spike`, `fare_outlier`, `missing_value`) to match your dataset.
+- **SigNoz not showing metrics?** Confirm `OTEL_EXPORTER_OTLP_ENDPOINT` is reachable from your machine and that port 4317 (or your custom port) is open.
 ## **What I Did (Step-by-Step)**
 
 ### **1. Implemented anomaly detection module**  
